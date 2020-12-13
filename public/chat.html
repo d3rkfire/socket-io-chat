@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chat</title>
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/main.css">
+    <style>
+        .member-container {
+            height: 80vh;
+            background-color: #444;
+            padding: 10px 20px 0 20px;
+        }
+
+        .member-container>p {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        .member-container>ul {
+            padding-left: 20px;
+            list-style-type: none;
+            color: #ccc;
+        }
+
+        input#message-input {
+            box-shadow: none;
+            border: none;
+            border-radius: 0;
+        }
+
+        .chat-container {
+            height: 80vh;
+            background-color: #222;
+            padding: 20px;
+            overflow-y: scroll;
+        }
+
+        .message {
+            display: inline-block;
+            padding: 10px;
+            margin-bottom: 10px;
+            max-width: 75%;
+            min-width: 150px;
+            background-color: #343a40;
+            color: #FFF;
+        }
+
+        .message-wrapper.message-right {
+            text-align: right;
+        }
+
+        .message-wrapper.message-left {
+            text-align: left;
+        }
+
+        .message-wrapper.message-center {
+            text-align: center;
+        }
+
+        .message-left>.message {
+            border-top-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        .message-right>.message {
+            border-top-right-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+
+        .message-center>.message {
+            background-color: #4A4E52;
+            border-radius: 10px;
+        }
+
+        .message>p {
+            display: inline-block;
+            margin-bottom: 0;
+            font-size: 1em;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1B1B1B;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <h2 class="display-4">Chat</h2>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="chat-container col-8">
+                <!-- <div class="message-wrapper message-right">
+                    <div class="message">
+                        <p class="lead">Valkyrie</p>
+                        <br>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. consectetur adipiscing elit.</p>
+                    </div>
+                </div>
+
+                <div class="message-wrapper message-left">
+                    <div class="message">
+                        <p class="lead">HackSlayer</p>
+                        <br>
+                        <p>Holleh</p>
+                    </div>
+                </div>
+
+                <div class="message-wrapper message-center">
+                    <div class="message">
+                        <p class="lead">HackSlayer has joined the room.</p>
+                    </div>
+                </div> -->
+
+
+            </div>
+            <div class="member-container col-2">
+                <p class="lead">Online - 0</p>
+                <ul>
+                    <!-- <li class="lead">Valkyrie</li>
+                    <li class="lead">HackSlayer</li>
+                    <li class="lead">l3lack3t</li> -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <input id="message-input" class="form-control bg-dark text-white col-10" type="text">
+        </div>
+    </div>
+</body>
+
+<script src="./js/socket.io.slim.js"></script>
+<script>
+    // Chat Classes
+    class MessageLeft {
+        constructor(name, message) {
+            this.element = document.createElement("div");
+            this.element.classList.add("message-wrapper", "message-left");
+            this.element.innerHTML = "<div class='message'><p class='lead'>" + name + "</p><br><p>" + message + "</p></div>";
+        }
+    }
+    class MessageRight {
+        constructor(name, message) {
+            this.element = document.createElement("div");
+            this.element.classList.add("message-wrapper", "message-right");
+            this.element.innerHTML = "<div class='message'><p class='lead'>" + name + "</p><br><p>" + message + "</p></div>";
+        }
+    }
+    class MessageCenter {
+        constructor(message) {
+            this.element = document.createElement("div");
+            this.element.classList.add("message-wrapper", "message-center");
+            this.element.innerHTML = "<div class='message'><p class='lead'>" + message + "</p></div>";
+        }
+    }
+    class Member {
+        constructor(name) {
+            this.element = document.createElement("li");
+            this.element.classList.add("lead");
+            this.element.innerHTML = name;
+        }
+    }
+
+    // Urls and Variables
+    var url = new URLSearchParams(window.location.search);
+    var name = url.get("name");
+    var chatroom = url.get("chatroom");
+    
+    var titleH2 = document.querySelector("h2.display-4");
+    var chatDiv = document.querySelector("div.chat-container");
+    var onlineCounter = document.querySelector("div.member-container>p.lead");
+    var memberList = document.querySelector("div.member-container>ul");
+    
+    // Setting Chatroom Name
+    document.title = chatroom;
+    titleH2.innerHTML = chatroom;
+
+    // Joining Room
+    var socket = io();
+    socket.on("connect", () => {
+        socket.emit("join-request", { "name": name, "chatroom": chatroom });
+    });
+    socket.on("join-announcement", (data) => {
+        var announcementElement = new MessageCenter(data.name + " has joined the room.").element;
+        chatDiv.appendChild(announcementElement);
+
+        memberList.innerHTML = "";
+        for (var i = 0; i < data.online.length; i++) {
+            var memberElement = new Member(data.online[i]).element;
+            memberList.appendChild(memberElement);
+        }
+        onlineCounter.innerHTML = "Online - " + memberList.children.length;
+    });
+
+    // Leaving Room
+    socket.on("leave-announcement", (data) => {
+        var announcementElement = new MessageCenter(data.name + " has left the room.").element;
+        chatDiv.appendChild(announcementElement);
+
+        memberList.innerHTML = "";
+        for (var i = 0; i < data.online.length; i++) {
+            var memberElement = new Member(data.online[i]).element;
+            memberList.appendChild(memberElement);
+        }
+        onlineCounter.innerHTML = "Online - " + memberList.children.length;
+    });
+
+    // Messaging
+    var messageInput = document.getElementById("message-input");
+    messageInput.onkeypress = (e) => {
+        if (e.keyCode == 13) {
+            socket.emit("send-message", { "name": name, "message": messageInput.value });
+            messageInput.value = "";
+        }
+    };
+    socket.on("new-message", (data) => {
+        var messageElement = null;
+        if (data.name == name) messageElement = new MessageRight(data.name, data.message).element;
+        else messageElement = new MessageLeft(data.name, data.message).element;
+        chatDiv.appendChild(messageElement);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    });
+</script>
+
+</html>

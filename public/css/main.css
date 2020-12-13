@@ -1,0 +1,9 @@
+body {
+    background: fixed linear-gradient(145deg, #12c2e9, #c471ed, #f64f59);
+}
+h1 {
+    margin: 10vh 0 10vh 0;
+}
+span.input-group-text {
+    width: 7em;
+}
